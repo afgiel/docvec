@@ -30,8 +30,15 @@ class GloveWrapper():
         self.mapping[UNK] = NUM_TOKENS - 1
         self.L[self.mapping[UNK]] = np.random.uniform(-1., 1., (NUM_DIM,))
 
-    def get(self, word):
+    def get_index(self, word):
         if word in self.mapping:
-            return self.L[self.mapping[word]]
+            return self.mapping[word]
         else:
-            return self.L[self.mapping[UNK]]
+            return self.mapping[UNK]
+
+    def get_vec(self, index):
+        return self.L[index]
+
+    def set_vec(self, index, vec):
+        assert len(vec) == NUM_DIM
+        self.L[index] = vec
