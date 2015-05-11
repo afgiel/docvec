@@ -8,7 +8,8 @@ import numpy as np
 import lasagne
 import theano
 import theano.tensor as T
-import utils 
+from recurrent import LSTMLayer, ReshapeLayer
+import utils
 
 NUM_CLASSES = 20
 NUM_EPOCHS = 5
@@ -18,7 +19,7 @@ LEARNING_RATE = 0.00001
 MOMENTUM = 0.9
 REG_STRENGTH = 0.00001
 
-def run_mlp(X_train, y_train,
+def run_lstm(X_train, y_train,
        X_val, y_val,
        X_test, y_test):
 
@@ -42,7 +43,6 @@ def run_mlp(X_train, y_train,
           break
 
   return output_layer
-
 
 def train(iter_funcs, dataset, batch_size=BATCH_SIZE):
     num_batches_train = dataset['num_examples_train'] // batch_size
@@ -137,24 +137,29 @@ def create_iter_functions(dataset, output_layer,
       )
 
 
+
 def build_model(input_dim, output_dim,
                 batch_size=BATCH_SIZE, num_hidden_units=NUM_HIDDEN_UNITS):
-    l_in = lasagne.layers.InputLayer(
-        shape=(batch_size, input_dim),
+    seq_length = 10 # WHAT DO I DO HERE
+	l_in = lasagne.layers.InputLayer(
+        shape=(batch_size, seq_length, input_dim),
     )
-    l_hidden = lasagne.layers.DenseLayer(
+	l_rec = LSTMLayer(
         l_in,
-        num_units=num_hidden_units,
-        nonlinearity=lasagne.nonlinearities.rectify,
+        num_units=num_hidden_units
     )
-    l_hidden_dropout = lasagne.layers.DropoutLayer(
-        l_hidden,
-        p=0.5
+    l_reshape = ReshapeLayer(
+        l_rec,
+        shape=(batch_size*seq_length, input_dim)
     )
-    l_out = lasagne.layers.DenseLayer(
-        l_hidden_dropout,
-        num_units=output_dim,
+    l_rec_out = lasagne.layers.DenseLayer(
+        l_reshape,
+        num_units=NUM_CLASSES,
         nonlinearity=lasagne.nonlinearities.softmax,
     )
-    return l_out
+    l_out = ReshapeLayer(
+        l_rec_out,
+        shape=(batch_size, seq_length, output_dim)
+    )
 
+	return l_out
