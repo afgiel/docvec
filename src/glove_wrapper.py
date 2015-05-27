@@ -1,10 +1,12 @@
 import numpy as np
 
 PATH_TO_DATA = '../data/glove.6B.300d.txt'
-NUM_TOKENS = 400000 + 1
+NUM_TOKENS = 400000 + 3
 NUM_DIM = 300
 
 UNK = 'UUUNKKK'
+START = '<START>'
+END = '<END>'
 
 class GloveWrapper():
 
@@ -21,7 +23,6 @@ class GloveWrapper():
                     print '\tGLOVE INDEX: %d' % index
                 line_split = line.split(' ')
                 word = line_split[0]
-                if word.startswith('U'): print word
                 vec = np.array(line_split[1:])
                 assert len(vec) == NUM_DIM
                 self.mapping[word] = index
@@ -29,6 +30,12 @@ class GloveWrapper():
 
         self.mapping[UNK] = NUM_TOKENS - 1
         self.L[self.mapping[UNK]] = np.random.uniform(-1., 1., (NUM_DIM,))
+
+        self.mapping[START] = NUM_TOKENS - 2
+        self.L[self.mapping[START]] = np.random.uniform(-1., 1., (NUM_DIM,))
+
+        self.mapping[END] = NUM_TOKENS - 3
+        self.L[self.mapping[END]] = np.random.uniform(-1., 1., (NUM_DIM,))
 
     def get_index(self, word):
         if word in self.mapping:
