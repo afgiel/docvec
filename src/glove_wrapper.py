@@ -37,11 +37,19 @@ class GloveWrapper():
         self.mapping[END] = NUM_TOKENS - 3
         self.L[self.mapping[END]] = np.random.uniform(-1., 1., (NUM_DIM,))
 
+        self.word_mapping = dict(zip(self.mapping.values(),self.mapping.keys()))
+
     def get_index(self, word):
         if word in self.mapping:
             return self.mapping[word]
         else:
             return self.mapping[UNK]
+
+   def get_word(self, index):
+        if index in self.word_mapping:
+            return self.word_mapping[index]
+        else:
+            return UNK
 
     def get_vec(self, index):
         return self.L[index]
