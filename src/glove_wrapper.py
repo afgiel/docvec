@@ -1,12 +1,13 @@
 import numpy as np
 
 PATH_TO_DATA = '../data/glove.6B.300d.txt'
-NUM_TOKENS = 400000 + 3
+NUM_SPEC = 3
+NUM_TOKENS = 100000 + NUM_SPEC
 NUM_DIM = 300
 
 UNK = 'UUUNKKK'
-START = '<START>'
-END = '<END>'
+START = 'SSTART'
+END = 'EEND'
 
 class GloveWrapper():
 
@@ -19,6 +20,8 @@ class GloveWrapper():
 
         with open(PATH_TO_DATA, 'r') as glove_file:
             for index, line in enumerate(glove_file):
+                if index > NUM_TOKENS - NUM_SPEC:
+                    continue
                 if verbose and index % 50000 == 0:
                     print '\tGLOVE INDEX: %d' % index
                 line_split = line.split(' ')
@@ -45,7 +48,7 @@ class GloveWrapper():
         else:
             return self.mapping[UNK]
 
-   def get_word(self, index):
+    def get_word(self, index):
         if index in self.word_mapping:
             return self.word_mapping[index]
         else:
