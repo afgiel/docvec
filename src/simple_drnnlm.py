@@ -215,9 +215,106 @@ class SimpleDRNNLM(NNBase):
 
         Do not modify this function!
         """
-        J = self.compute_loss(X, Y)
+        J = self.compute_loss(X, Y, D)
         ntot = sum(map(len,Y))
         return J / float(ntot)
+
+    def generate_docvecs(self, X, y, ds, D0):
+        self.sparams.D = D0.copy() 
+        self.custom_train_sgd(X, y, ds, apply_to=['D']) 
+        return self.sparams.D
+
+    def custom_train_sgd(self, X, y, ds, apply_to=[],
+                  idxiter=None, alphaiter=None,
+                  printevery=10000, costevery=10000,
+                  devidx=None):
+        if idxiter == None: # default training schedule
+            idxiter = xrange(len(y))
+        if alphaiter == None: # default training schedule
+            alphaiter = itertools.repeat(self.alpha)
+
+        costs = []
+        counter = 0
+        t0 = time.time()
+
+        try:
+            print "Begin SGD..."
+            for idx, alpha in itertools.izip(idxiter, alphaiter):
+                if counter % printevery == 0:
+                    print "  Seen %d in %.02f s" % (counter, time.time() - t0)
+                if False and counter % costevery == 0:
+                    if devidx != None:
+                        cost = self.compute_mean_loss(X[devidx], y[devidx], ds[devidx])
+                    else: cost = self.compute_mean_loss(X, y, ds)
+                    costs.append((counter, cost))
+                    print "  [%d]: mean loss %g" % (counter, cost)
+                #pdb.set_trace()
+                if hasattr(idx, "__iter__") and len(idx) > 1: # if iterable
+                    self.custom_train_minibatch_sgd(X[idx], y[idx], ds[idx], alpha, apply_to)
+                elif hasattr(idx, "__iter__") and len(idx) == 1: # single point
+                    idx = idx[0]
+                    self.custom_train_point_sgd(X[idx], y[idx], ds[idx], alpha, apply_to)
+                else:
+                    self.custom_train_point_sgd(X[idx], y[idx], ds[idx], alpha, apply_to)
+
+                counter += 1
+        except KeyboardInterrupt as ke:
+            """
+            Allow manual early termination.
+            """
+            print "SGD Interrupted: saw %d examples in %.02f seconds." % (counter, time.time() - t0)
+            return costs
+
+        # Wrap-up
+        if devidx != None:
+            cost = self.compute_mean_loss(X[devidx], y[devidx], ds[devidx])
+        else: cost = self.compute_mean_loss(X, y, ds)
+        costs.append((counter, cost))
+        print "  [%d]: mean loss %g" % (counter, cost)
+        print "SGD complete: %d examples in %.02f seconds." % (counter, time.time() - t0)
+
+        return costs
+
+
+    def custom_train_point_sgd(self, x, y, d, alpha, apply_to):
+        """Generic single-point SGD"""
+        self._reset_grad_acc()
+        self._acc_grads(x, y, d)
+        self._custom_apply_grad_acc(apply_to, alpha)
+
+    def custom_train_minibatch_sgd(self, X, y, ds, alpha, apply_to):
+        """
+        Generic minibatch SGD
+        """
+        self._reset_grad_acc()
+        for i in range(len(y)):
+            self._acc_grads(X[i], y[i], ds[i])
+        self._custom_apply_grad_acc(apply_to, alpha)
+
+    def _custom_apply_grad_acc(self, apply_to, alpha=1.0):
+        """
+        Update parameters with accumulated gradients.
+
+        alpha can be a scalar (as in SGD), or a vector
+        of the same length as the full concatenated
+        parameter vector (as in e.g. AdaGrad)
+        """
+        for param in apply_to:
+            if param in self.params._name_to_idx:
+                param -= alpha * self.grads[param]
+            elif param in self.sparams._name_to_idx:
+                self.custom_apply_to(param, alpha=-1*alpha)
+            else:
+                print 'PARAM NAME TO BE UPDATED NOT FOUND'
+# DELETE BELOW THIS LINE ------------
+        self.sgrads.apply_to(self.sparams, alpha=-1*alpha)
+
+
+    def custom_apply_to(self, param, alpha=-1.0):
+        """Apply sparse updates to parameter store."""
+        ud = self.sgrads[param]
+        for idx, v in ud: # idx, vec pairs
+            self.sparams[param][idx] += alpha*v # in-place update
 
 
     def generate_sequence(self, d, init, end, maxlen=100):
