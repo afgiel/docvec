@@ -31,7 +31,7 @@ class SimpleDRNNLM(NNBase):
 
         # Initialize word vectors
         self.sparams.L = L0.copy()
-        self.sparams.D = L0.copy()
+        self.sparams.D = D0.copy()
         self.params.U = random.randn(self.vdim, self.hdim)*0.1
 
         # Initialize H matrix, as with W and U in part 1
