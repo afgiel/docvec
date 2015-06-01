@@ -10,7 +10,7 @@ from nn.math import MultinomialSampler, multinomial_sample
 from misc import random_weight_matrix
 
 
-class SimpleDRNNLM(NNBase):
+class DRNNLM(NNBase):
 
     def __init__(self, L0, D0, U0=None,
                  alpha=0.005, rseed=10, bptt=1):
@@ -19,7 +19,7 @@ class SimpleDRNNLM(NNBase):
         self.vdim = L0.shape[0] # vocab size
         self.ddim = D0.shape[0] # doc size
         param_dims = dict(H = (self.hdim, self.hdim),
-                          U = L0.shape)
+                          U = L0.shape, G = L0.shape)
         # note that only L gets sparse updates
         param_dims_sparse = dict(L = L0.shape, D = D0.shape)
         NNBase.__init__(self, param_dims, param_dims_sparse)
@@ -32,10 +32,12 @@ class SimpleDRNNLM(NNBase):
         # Initialize word vectors
         self.sparams.L = L0.copy()
         self.sparams.D = D0.copy()
+
         self.params.U = random.randn(self.vdim, self.hdim)*0.1
 
         # Initialize H matrix, as with W and U in part 1
         self.params.H = random_weight_matrix(self.hdim, self.hdim)
+        self.params.G = random_weight_matrix(self.vdim, self.hdim)
 
         #### END YOUR CODE ####
 
@@ -56,11 +58,12 @@ class SimpleDRNNLM(NNBase):
 
         ##
         # Forward propagation
+        d_vec = self.sparams.D[d]
         for t in xrange(ns):
             x_t = xs[t]
-            zs[t] = self.params.H.dot(hs[t-1]) + self.sparams.L[x_t] + self.sparams.D[d]
+            zs[t] = self.params.H.dot(hs[t-1]) + self.sparams.L[x_t] + d_vec
             hs[t] = sigmoid(zs[t])
-            ps[t] = softmax(self.params.U.dot(hs[t]))
+            ps[t] = softmax(self.params.U.dot(hs[t]) + self.params.G.dot(d_vec.T).reshape(self.vdim,))
 
         ##
         # Backward propagation through time
@@ -71,6 +74,8 @@ class SimpleDRNNLM(NNBase):
             p_t = ps[t]
             eps_t = p_t - make_onehot(ys[t], len(p_t))
             self.grads.U += outer(eps_t, hs[t])
+            self.grads.G += outer(eps_t, d_vec)
+            d_grad += self.params.G.T.dot(eps_t)
             sig_prime_t = sigmoid(zs[t])*(1.-sigmoid(zs[t]))
             delta[t] = sig_prime_t * self.params.U.T.dot(eps_t)
             self.sgrads.L[xs[t]] = delta[t].copy()
@@ -185,11 +190,12 @@ class SimpleDRNNLM(NNBase):
         J = 0
         ns = len(xs)
         hs = zeros((ns+1, self.hdim))
+        d_vec = self.sparams.D[d]
         for t in xrange(ns):
             x_t = xs[t]
-            zs_t = self.params.H.dot(hs[t-1]) + self.sparams.L[x_t] + self.sparams.D[d]
+            zs_t = self.params.H.dot(hs[t-1]) + self.sparams.L[x_t] + d_vec
             hs[t] = sigmoid(zs_t)
-            ps_t = softmax(self.params.U.dot(hs[t]))
+            ps_t = softmax(self.params.U.dot(hs[t]) + self.params.G.dot(d_vec.T).reshape(self.vdim,))
             J += -1*log(ps_t[ys[t]])
         return J
 
@@ -200,7 +206,7 @@ class SimpleDRNNLM(NNBase):
         (wrapper for compute_seq_loss)
 
         Do not modify this function!
-        """ 
+        """
         if isinstance(X, ndarray): # single example
             return self.compute_seq_loss(X, Y, D)
         else: # multiple examples
@@ -351,11 +357,12 @@ class SimpleDRNNLM(NNBase):
 
         curr = init
         t = 0
+        d_vec = self.sparams.D[d]
         while curr != end and len(ys) < maxlen:
             x_t = curr
-            zs_t = self.params.H.dot(hs[t-1]) + self.sparams.L[x_t] + self.sparams.D[d]
+            zs_t = self.params.H.dot(hs[t-1]) + self.sparams.L[x_t] + d_vec
             hs[t] = sigmoid(zs_t)
-            ps_t = softmax(self.params.U.dot(hs[t]))
+            ps_t = softmax(self.params.U.dot(hs[t]) + self.params.G.dot(d_vec))
             y = multinomial_sample(ps_t)
             ys.append(y)
             curr = y
