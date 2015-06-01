@@ -198,7 +198,7 @@ class SimpleDRNNLM(NNBase):
 
         Do not modify this function!
         """
-        if not isinstance(X[0], ndarray): # single example
+        if isinstance(X[0], ndarray): # single example
             return self.compute_seq_loss(X, Y, D)
         else: # multiple examples
             losses = []
@@ -220,8 +220,8 @@ class SimpleDRNNLM(NNBase):
         return J / float(ntot)
 
     def generate_docvecs(self, X, y, ds, D0):
-        self.sparams.D = D0.copy() 
-        self.custom_train_sgd(X, y, ds, apply_to=['D']) 
+        self.sparams.D = D0.copy()
+        self.custom_train_sgd(X, y, ds, apply_to=['D'])
         return self.sparams.D
 
     def custom_train_sgd(self, X, y, ds, apply_to=[],
@@ -242,6 +242,7 @@ class SimpleDRNNLM(NNBase):
             for idx, alpha in itertools.izip(idxiter, alphaiter):
                 if counter % printevery == 0:
                     print "  Seen %d in %.02f s" % (counter, time.time() - t0)
+                # CURRENTLY WILL NEVER PRINT COST
                 if False and counter % costevery == 0:
                     if devidx != None:
                         cost = self.compute_mean_loss(X[devidx], y[devidx], ds[devidx])
@@ -301,13 +302,11 @@ class SimpleDRNNLM(NNBase):
         """
         for param in apply_to:
             if param in self.params._name_to_idx:
-                param -= alpha * self.grads[param]
+                self.params[param] -= alpha * self.grads[param]
             elif param in self.sparams._name_to_idx:
                 self.custom_apply_to(param, alpha=-1*alpha)
             else:
-                print 'PARAM NAME TO BE UPDATED NOT FOUND'
-# DELETE BELOW THIS LINE ------------
-        self.sgrads.apply_to(self.sparams, alpha=-1*alpha)
+                print 'PARAM NAME [%s] NOT FOUND' % param
 
 
     def custom_apply_to(self, param, alpha=-1.0):
