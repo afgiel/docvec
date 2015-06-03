@@ -1,4 +1,5 @@
 import os
+import numpy as np
 from theano import tensor as T
 import cPickle as cpkl
 
@@ -15,14 +16,18 @@ train_files = os.listdir(data_root+ '/train/')
 print 'getting train and test data'
 train_x, train_y, train_D, train_class = get_data(gw, train_files, 'train/')
 
+print 'initializing'
 drnn = RNNSLU(train_D[-1], gw)
+print 'intialized'
 
 num_epochs = 25
 learn_rate = 0.01
 
 for e in range(num_epochs):
     for i in range(len(train_x)):
-        drnn.sentence_train.train(train_x[i], train_y[i], learn_rate, train_D[i])
+        x = np.array(train_x[i]).astype('int32')
+        y = np.array(train_y[i]).astype('int32')
+        drnn.sentence_train(x, y, learn_rate, train_D[i])
         drnn.normalize()
         if i % 10 == 0:
             print 'epoch: ', e, ' sentence: ', i

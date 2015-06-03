@@ -1,7 +1,9 @@
 import theano
-import numpy 
+import numpy
 from theano import tensor as T
 from glove_wrapper import GloveWrapper
+
+from collections import OrderedDict
 
 class RNNSLU(object):
     ''' elman neural net model '''
@@ -42,15 +44,14 @@ class RNNSLU(object):
                                value=numpy.zeros(nc,
                                dtype=theano.config.floatX))
         self.h0 = theano.shared(name='h0',
-                                value=numpy.zeros(nh,
-                                dtype=theano.config.floatX))
-        # not sure if this d is best, but need a way to pass it in the the recurrence function based of 
+                                value=numpy.zeros((1, nh)).astype(theano.config.floatX))
+        # not sure if this d is best, but need a way to pass it in the the recurrence function based of
         # the doc being viewed
         self.d = theano.shared(name='d',
                                value=numpy.zeros((nd,nh)).astype(theano.config.floatX))
 
 
-                               
+
 
         # matrix to mult doc vec by to create addition to softmax calc
         self.g = theano.shared(name='g',
@@ -62,12 +63,15 @@ class RNNSLU(object):
                        self.bh, self.b, self.h0, self.d, self.g]
 
         doc_num = T.iscalar('doc_num')
-        idxs = T.imatrix()
-        x = self.emb[idxs].reshape((idxs.shape[0], de)) # de should be 300
+        idxs = T.ivector()
+        x = self.emb[idxs]
+        #print 'x ndim', x.ndim
+        #x = theano.printing.Print('x')(x)
         doc_vec = self.d[doc_num]
+        #doc_vec = theano.printing.Print('doc')(doc_vec)
         y_sentence = T.ivector('y_sentence')  # labels
 
-        def recurrence(x_t, doc, h_tm1):
+        def recurrence(x_t, h_tm1, doc):
             h_t = T.nnet.sigmoid(T.dot(x_t, self.wx)
                                  + T.dot(h_tm1, self.wh) + self.bh + doc)
             s_t = T.nnet.softmax(T.dot(h_t, self.w) + self.b + T.dot(doc, self.g))
