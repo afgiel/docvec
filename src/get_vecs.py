@@ -1,4 +1,5 @@
 import string
+import nltk
 
 import numpy as np
 
@@ -9,31 +10,20 @@ class TextPreprocessor():
         self.glove_vecs = GloveWrapper(verbose=True)
 
     def doc_to_inds(self, doc):
-        
+
         doc = doc.lower()
         doc = doc.replace('\n', ' ')
 
-        for punct in string.punctuation:
-            #if punct in ['.', '?', '!']:
-            #    doc = doc.replace(punct, " " + punct + " EEND SSTART ")
-            #else: 
-            doc = doc.replace(punct, " " + punct + " ")
-        doc = doc.replace('  ', ' ').rstrip()
+        inds = []
 
-        tokens = doc.split(' ')
-        
-        inds = [0]* len(tokens)
+        for sent in nltk.tokenize.sent_tokenize(doc):
+            words = nltk.word_tokenize(sent)
+            sent_of_inds = []
+            sent_of_inds.append(self.glove_vecs.get_index('SSTART'))
+            for word in words:
+                sent_of_inds.append(self.glove_vecs.get_index(word))
+            sent_of_inds.append(self.glove_vecs.get_index('EEND'))
+            inds.append(sent_of_inds)
 
-        for i in range(len(tokens)):
-            inds[i] = self.glove_vecs.get_index(tokens[i]) 
-
-        start_ind = self.glove_vecs.get_index('SSTART')
-        end_ind = self.glove_vecs.get_index('EEND')
-        
-        inds.insert(0, start_ind)
-        #if inds[-1] == start_ind:
-        #    inds.pop()
-        #if inds[-1] != end_ind:
-        inds.append(end_ind)
         return inds
-            
+

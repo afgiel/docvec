@@ -19,15 +19,10 @@ def get_data(gw, categories, subdir):
         cat = categories[i]
         f = open(data_root + subdir + cat, 'rb')
         doc_list = pkl.load(f) # [doc index][timestep] = word index in glove matrix
-        for doc in doc_list[:4]:
+        for doc in doc_list:
 
-            docs = [[]]
-            #group into sentences
-            for x, y in itertools.groupby(doc, lambda z: z in delims):
-                docs[-1].extend(y)
-                if x: docs.append([])
             # make train and test
-            for d in docs:
+            for d in doc:
                 xs.append(d[:-1])
                 ys.append(d[1:])
                 ds.append(doc_ind)
@@ -39,7 +34,7 @@ def get_data(gw, categories, subdir):
 # generate sequences
 def seq_to_words(seq):
     return [gw.get_word(s) for s in seq]
-        
+
 def main():
     data_root = '../data/wordinds/'
     print 'starting L matrix construction'
@@ -50,7 +45,7 @@ def main():
 
     print 'getting train and test data'
     train_x, train_y, train_D, _ = get_data(gw, train_files, 'train/') 
-    #pdb.set_trace()
+    pdb.set_trace()
     test_x, test_y, test_D, _ = get_data(gw, train_files, 'test/') 
     D0 = np.random.randn(train_D[-1] + 1, 300)
     print 'got train and test data'
