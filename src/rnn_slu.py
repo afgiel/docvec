@@ -5,7 +5,7 @@ from glove_wrapper import GloveWrapper
 
 class RNNSLU(object):
     ''' elman neural net model '''
-    def __init__(self, nd):
+    def __init__(self, nd, gw):
         '''
         nh :: dimension of the hidden layer
         nc :: number of classes size of vocab for language model
@@ -16,7 +16,6 @@ class RNNSLU(object):
         '''
         # parameters of the model
         # need to change these embeddings to be the glove vectors
-        gw = GloveWrapper(verbose=True)
         ne = gw.L.shape[0]
         de = gw.L.shape[1]
         nh = de
