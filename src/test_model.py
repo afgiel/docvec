@@ -3,27 +3,29 @@ import pdb
 import numpy as np
 import pickle as pkl
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 from sklearn import decomposition
 
 from rnn_lang import get_data
 from glove_wrapper import GloveWrapper
+from nearest_neighbors import DocNN 
 
 
 data_root = '../data/wordinds/'
 test_files = os.listdir(data_root+ '/train/') # list of all 20 categories
-num_classes = 2
-num_docs = 990
-colors = "bgrcmykw"
+num_classes = 20
+num_docs = 80
+colors = iter(cm.rainbow(np.linspace(0,1,num_classes)))#"bgrcmykw"
 
 gw = GloveWrapper(verbose=True)
 
-test_x, test_y, test_D, labels = get_data(gw, test_files[:2], 'test/') 
+test_x, test_y, test_D, labels = get_data(gw, test_files, 'test/') 
 
 
 model = None
 print 'loading model'
-with open('../data/simple_drnnlm_model.pkl', 'r') as model_file:
+with open('../data/drnnlm_model.pkl', 'r') as model_file:
     model = pkl.load(model_file) 
 print 'model loaded'
 
@@ -37,8 +39,15 @@ D_plot = pca.fit(D).transform(D)
 
 for cat in range(num_classes):
     cat_inds = [i for i, y in enumerate(labels) if y == cat]
-    plt.scatter(D_plot[cat_inds, 0], D_plot[cat_inds, 1], c=colors[cat])
+    plt.scatter(D_plot[cat_inds, 0], D_plot[cat_inds, 1], c=next(colors))
 
 plt.title('PCA representation of test set')
 plt.show()
 # plot here
+
+knn = DocNN(D, k=3)
+for label in range(len(labels)):
+    vecs, indices = knn.doc_nearest(label)
+    print 'label: %d' % labels[label]
+    print [labels[ind] for ind in indices]
+

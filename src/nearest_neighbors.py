@@ -8,7 +8,7 @@ class DocNN():
         self.D = D
         self.nbrs = NearestNeighbors(n_neighbors=k+1, algorithm='auto').fit(D)
 
-    def doc_nearest(doc_ind):
-        distances, indices = nbrs.kneighbors(self.D)
+    def doc_nearest(self, doc_ind):
+        distances, indices = self.nbrs.kneighbors(self.D)
         neighbors = indices[doc_ind][1:]
-        return self.D[neighbors]
+        return self.D[neighbors], neighbors
