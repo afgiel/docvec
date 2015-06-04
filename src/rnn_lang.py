@@ -1,10 +1,10 @@
-import os 
+import os
 import pickle as pkl
 import pdb
 import itertools
 import numpy as np
 
-from glove_wrapper import GloveWrapper 
+from glove_wrapper import GloveWrapper
 from simple_drnnlm import SimpleDRNNLM
 
 def get_data(gw, categories, subdir):
@@ -14,12 +14,13 @@ def get_data(gw, categories, subdir):
     ds = []
     cs = [] # class
     doc_ind = 0
-    delims = [gw.get_index('.'), gw.get_index('?'), gw.get_index('!')]
+    docs_per = 10
     for i in range(len(categories)):
         cat = categories[i]
         f = open(data_root + subdir + cat, 'rb')
         doc_list = pkl.load(f) # [doc index][timestep] = word index in glove matrix
-        for doc in doc_list:
+
+        for doc in doc_list[:docs_per]:
 
             # make train and test
             for d in doc:

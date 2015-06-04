@@ -17,7 +17,7 @@ print 'getting train and test data'
 train_x, train_y, train_D, train_class = get_data(gw, train_files, 'train/')
 
 print 'initializing'
-drnn = RNNSLU(train_D[-1], gw)
+drnn = RNNSLU(train_D[-1]+1, gw)
 print 'intialized'
 
 num_epochs = 25
