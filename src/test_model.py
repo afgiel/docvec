@@ -32,7 +32,7 @@ print 'model loaded'
 #D0 = np.random.randn(train_D[-1] + 1, 300)
 #D = model.generate_docvecs(test_x, test_y, test_D, D0)
 
-D = model[:num_docs]#model.sparams.D[:num_docs]
+D = model.d[:num_docs]#model.sparams.D[:num_docs]
 labels = labels[:num_docs]
 pca = decomposition.PCA(n_components=2)
 D_plot = pca.fit(D).transform(D)
