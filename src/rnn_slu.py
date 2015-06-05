@@ -109,3 +109,6 @@ class RNNSLU(object):
 
         def __get_state__(self):
             return self.d
+
+       def __getitem__(self, index):
+            return self.d[index]
